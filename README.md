@@ -7,7 +7,7 @@
 
 **chmod +x ~/worl/worl.x**
 
-**cp ~/worl/worl.x /usr/bin/worl**
+**sudo cp ~/worl/worl.x /usr/bin/worl**
 
 ## USAGE:
 **worl \[options\] \[text\]**
