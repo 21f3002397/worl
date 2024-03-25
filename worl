@@ -1,0 +1,88 @@
+#!/usr/bin/bash
+declare -i o
+declare -i r
+o=0
+r=0
+offset_flag=false
+file_flag=false
+random_flag=false
+# looping through arguments
+for (( i=1;i<=$#;i++ ));
+do
+	case ${@:i:1} in
+		# checking for -o option and fetching the next argument as argument for the option
+		-o|--offset)
+			if [[ "${@:i+1:1}" =~ [[:digit:]]*[[:blank:]]*$ ]]; then
+				o+="${@:i+1:1}"
+				offset_flag=true
+			else
+				echo "option -o/--offset received incorrect argument"
+				echo "Enter only a number"
+			fi
+			;;
+		# checking for -f option and checking if next argument is a valid file
+		# overwriting the previous file is intended behaviour
+		-f|--file)
+			if [[ -f "${@:i+1:1}" ]]; then
+				f="${@:i+1:1}"
+				file_flag=true
+			else
+				echo "option -f/--file received incorrect argument"
+				echo "Enter Valid File"
+			fi
+			;;
+		# checking for -r option
+		-r|--random)
+			r=$RANDOM
+			file_flag=true
+			;;
+		# checking for '=' style options 
+		# ------------------------------------------------------
+		-o=*|--offset=*)
+			if [[ "${@:i:1}" =~ (-o|--offset)=[[:digit:]][[:blank:]]* ]]; then
+				o+=$(echo ${@:i:1} | sed -E "s/(-o|--offset)=([[:digit:]]*)/\2/")
+				offset_flag=true
+			else
+				echo "option -o/-offset can't parse the given argument"
+				echo "Enter only a number with no space on either side of '='"
+			fi
+			;;
+		-f=*|--file=*)
+			reg=$(echo "${@:i:1}" | sed -E "s/(-f|--file)=([[:alnum:]]*)/\2/")
+			if [ -f "$reg" ]; then
+				f="$reg"
+				file_flag=true
+			else
+				echo "option -f/--file received incorrect argument"
+				echo "Enter Valid FIle"
+			fi		
+		# ------------------------------------------------------
+			
+	esac
+		
+done
+non_option_args=()
+
+# Initialize a flag to track whether the previous argument was an option
+prev_was_option=false
+
+# Loop through command-line arguments
+for arg in "$@"; do
+    # Check if the argument is an option
+    if [[ $arg =~ -[of] ]]; then
+        # This is an option, set the flag to true
+        prev_was_option=true
+    elif $prev_was_option || [[ $arg =~ -r ]]; then
+        # The previous argument was an option, so this is its optarg
+        prev_was_option=false
+    else
+        # This is a non-option argument, add it to the array
+        non_option_args+=("$arg")
+    fi
+done
+k=$(cat "$f" 2>/dev/null)
+non_option_args+=("$k")
+
+x=$(echo "${non_option_args[*]}")
+sink=$(echo $x | sha256sum - | cut -d' ' -f1)
+echo "$sink" | sed "s/\(.\)/\1\n/g" | sed -e "s/a/10/" -e "s/b/11/" -e "s/c/12/" -e "s/d/13/" -e "s/e/14/" -e "s/f/15/" | awk "NR%2==0 { i += \$1*2+$o*5+$r*7 } NR%2==1{ i += \$1*3+$o*111+$r*119 } END{ if (i%2==0) {print \"w\" }else { print \"l\"}}"
